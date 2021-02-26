@@ -24,7 +24,7 @@ class CustomDatasetFromImages(Dataset):
 			transforms.RandomVerticalFlip(),
 			#transforms.RandomAffine(0, translate=(2 / img_size, 2 / img_size), scale=None, shear=None, resample=False, fillcolor=0),
 			#transforms.RandomRotation(3),
-			transforms.RandomResizedCrop(img_size, scale=(0.9,0.9), ratio=(1,1)),
+			transforms.RandomResizedCrop(img_size, scale=(0.9,0.9), ratio=(1.0,1.0)),
 			transforms.ToTensor(), ])
 		# transforms.Normalize((0.5,), (0.5,))])
 
