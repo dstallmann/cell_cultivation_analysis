@@ -10,13 +10,13 @@ Use Python 3 (perferably 3.7.3) and the requirements.txt and your favorite modul
 
 Make sure the data directory contains the folders 128p_bf etc. and has the same parental path as the vae folder. It should look like this:
 
- .
-    ├── ...
-    ├── data 
-	│	├── 128p_bf
-	│	└── ...
-    ├── ...
-    ├── vae
+ .<br/>
+    ├── ...<br/>
+    ├── data<br/>
+	│	├── 128p_bf<br/>
+	│	└── ...<br/>
+    ├── ...<br/>
+    ├── vae<br/>
     └── ...
 
 Call cli.py with adjusted parameters, if desired.
