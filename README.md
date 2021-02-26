@@ -2,7 +2,7 @@
 These is the sourcecode for the paper “Towards an Automatic Analysis of CHO-K1 Suspension Growth in Microfluidic Single-cell Cultivation”, for the Bioinformatics journal.
 
 ## Usage instructions
-Use Python 3 (perferably 3.7.3) and the requirements.txt and your favorite module management tool to make sure all required modules are installed. CUDA is required to run the project. We recommend to use CUDA 11.0, but 10.1 or 10.2 should work too. Should you have any trouble to install torch and torchvision with CUDA enabled, you can append to the module installation command to get the packages directly from pytorch.org.
+Use Python 3 (perferably 3.7.3) and the requirements.txt and your favorite module management tool to make sure all required modules are installed. CUDA is required to run the project. We recommend to use CUDA 11.0, but 10.1 or 10.2 should work too. Should you have any trouble to install torch and torchvision with CUDA enabled, you can append the following to the module installation command to get the packages directly from pytorch.org.
 
 ```
 -f https://download.pytorch.org/whl/torch_stable.html
