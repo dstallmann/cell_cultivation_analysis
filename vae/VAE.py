@@ -6,13 +6,29 @@ torch.cuda.manual_seed_all(2)
 
 class Flatten(nn.Module):
 	def forward(self, data):
+		"""
+		Flattens the network at the end of the encoder
+		@param data: data to be flattened
+		@return: flattened data
+		"""
 		return data.view(data.size(0), -1)
 
 class UnFlatten(nn.Module):
 	def forward(self, data):
+		"""
+		Unflattens the network at the beginning of the decoder
+		@param data: data to be unflattened
+		@return: unflattened data
+		"""
 		return data.view(data.size(0), -1, 1, 1)
 
 def reparameterize(mu, logvar):
+	"""
+	Does the VAE reparameterization
+	@param mu: latent mean
+	@param logvar: latent log variance
+	@return: sample from the representational distribution
+	"""
 	mu = mu.cuda()
 	std = logvar.mul(0.5).exp_().cuda()
 	# return torch.normal(mu, std).cuda()
@@ -139,12 +155,22 @@ class VAE(nn.Module):
 		self.regressor = nn.DataParallel(self.regressor)
 
 	def bottleneck(self, h):
+		"""
+		Sends the compressed data representation through the bottleneck
+		@param h: intermediate layer state (before and after the bottleneck)
+		@return: reparameterization, latent mean and latent log variance
+		"""
 		mu = self.fc1(h).cuda() # Mean
 		logvar = self.fc2(h).cuda() # Variance
 		z = reparameterize(mu, logvar).cuda()
 		return z, mu, logvar
 
 	def representation(self, x):
+		"""
+
+		@param x:
+		@return:
+		"""
 		if self.mode == 'natural':
 			h = self.natural_reader(x).cuda()
 		else:
@@ -153,6 +179,11 @@ class VAE(nn.Module):
 		return self.bottleneck(h)[0] # [naturaltestlen+synthtestlen, bottlenecksize]
 
 	def forward(self, x):
+		"""
+		The default model forward, differentiating between natural and synthetic
+		@param x: the data to work with
+		@return: the reconstructions and according variables
+		"""
 		if self.mode == 'natural':
 			h = self.natural_reader(x).cuda()
 		else:
@@ -169,6 +200,11 @@ class VAE(nn.Module):
 		return y, mu, logvar, cc
 
 	def sample_start(self, x):
+		"""
+		Function to sample from inner representation
+		@param x: the data to work with
+		@return: sample from the representational distribution
+		"""
 		if self.mode == 'natural':
 			h = self.natural_reader(x).cuda()
 		else:
@@ -178,6 +214,11 @@ class VAE(nn.Module):
 		return z
 
 	def sample_end(self, z):
+		"""
+		Continues the sampling from inner representation
+		@param z: sample from the representational distribution
+		@return: the decoded image and its cell count prediction
+		"""
 		cc = self.regressor(z)
 		z = self.fc3(z).cuda()
 		y = self.common_decoder(z).cuda()

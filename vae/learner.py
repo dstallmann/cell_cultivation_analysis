@@ -87,21 +87,39 @@ eval_interval = 1000
 
 # region Utility functions
 def set_seed(seed):
+	"""
+	Sets the seed at all seed-sensitive modules
+	@param seed: int; the seed to allow reproducibility
+	"""
 	torch.manual_seed(seed)
 	torch.cuda.manual_seed_all(seed)
 	np.random.seed(seed)
 	
 def reset_loss_sums():
+	"""
+	Sets all summed losses to 0 for the next iteration
+	"""
 	global decoder_nat_loss, decoder_syn_loss, KLD_syn_loss, KLD_nat_loss, regressor_nat, regressor_syn
 	decoder_nat_loss = decoder_syn_loss = KLD_syn_loss = KLD_nat_loss = regressor_nat = regressor_syn = 0
 
 def save_log(log, title):
+	"""
+	Saves the log files to the "logs" subfolder
+	@param log: string; contains the logged data
+	@param title: string; prefix name of the file
+	"""
 	logfile = open(directory + "/logs/" + title + "_log.txt", "w")
 	for line in log:
 		logfile.write(str(line) + "\n")
 	logfile.close()
 
-def eval_util(mode, data, noise):
+def sample_representation(mode, data, noise):
+	"""
+	As part of the evaluation, it samples random images from the representational space and creates (hopefully) similar images, by sampling again nearby.
+	@param mode: string, differentiates between types of wanted images
+	@param data: contains a data batch from the synthetic-test dataloader
+	@param noise: contains a noise batch generated in evaluate()
+	"""
 	if mode == "orig_syn":
 		model.mode = "synth"
 		z = model.sample_start(data)
@@ -119,6 +137,11 @@ def eval_util(mode, data, noise):
 	sample_txt.close()
 
 def load_log(filename):
+	"""
+	Loads a logfile for continuation
+	@param filename: string; the name of the file to be loaded
+	@return: string; the loaded logfile
+	"""
 	logfile = open(directory + filename, "r")
 	log = logfile.read().splitlines()
 	log = [float(i) for i in log]
@@ -126,6 +149,9 @@ def load_log(filename):
 	return log
 
 def playSound():
+	"""
+	Plays a sound when called (differentiates between Unix and Windows systems). Uncomment to use.
+	"""
 	if os.name == "posix":
 		duration = 0.5  # seconds
 		freq = 80  # Hz
@@ -133,12 +159,23 @@ def playSound():
 	elif os.name == "nt":
 		duration = 500  # milliseconds
 		freq = 80  # Hz
-		winsound.Beep(freq, duration)
+		#winsound.Beep(freq, duration)
 
 # endregion
 
 # Reconstruction + KL divergence losses summed over all elements and batch
 def loss_function(recon_x, x, mu, logvar, cl, target, natural):
+	"""
+	Universally calculates the loss, be it for training or testing. Hardcoded to use mse_loss. Change below to binary_cross_entropy if desired.
+	@param recon_x: images reconstructed by the decoder(s)
+	@param x: original images for comparison
+	@param mu: latent mean
+	@param logvar: latent log variance
+	@param cl: cell count predictions for given images
+	@param target: cell count label for given labeled images
+	@param natural: bool, true if x is of type natural
+	@return: float, float, float, the summed loss as well as the Kullback-Leibler divergence and the loss of the regressor in separate
+	"""
 	global decoder_nat_loss, decoder_syn_loss, KLD_syn_loss, KLD_nat_loss, regressor_nat, regressor_syn
 	#decoder_loss = F.binary_cross_entropy(recon_x, x.view(-1, 1, img_size, img_size), reduction='sum') * decoder_l_factor
 	decoder_loss = F.mse_loss(recon_x, x) * decoder_l_factor
@@ -169,6 +206,12 @@ def loss_function(recon_x, x, mu, logvar, cl, target, natural):
 	return decoder_loss + KLD + regressor_loss, KLD, regressor_loss
 
 def model_train(loader, natural):
+	"""
+	Main training function, called by learn(), calls the VAE, handles the loaded data, does the backpropagation etc.
+	@param loader: the dataloader that contains a numpy-representation of the images and their labels
+	@param natural: bool, true if the data in loader is of type natural
+	@return: proportion of correctly counted cells (correct), as well as the mean error and the mean deviation, averaged over all the data contained in loader
+	"""
 	model.train()
 	train_loss = mse_loss = KLD_loss = num_unlabeled = 0
 	ccs = []
@@ -221,6 +264,12 @@ def model_train(loader, natural):
 	return correct, MAE, avg_dev
 
 def model_test(epo, natural):
+	"""
+	Main test function, called by learn(), calls the VAE, handles the loaded data, does the backpropagation etc.
+	@param epo: string, epoch, just for logging purposes
+	@param natural: true if the the natural pipeline should be tested
+	@return: proportion of correctly counted cells (correct), as well as the mean error, averaged over all the data contained in loader
+	"""
 	model.eval()
 	with torch.no_grad():
 		n = batch_size
@@ -299,6 +348,15 @@ def model_test(epo, natural):
 		return correct, MAE
 
 def learn(start_epoch, max_epochs, plot_interval, test_interval, checkpoint_interval, delete_checkpoints):
+	"""
+	Main machine learning function. Handles epoch management, calls training and testing, creates evaluations, checkpoints and logs
+	@param start_epoch: int, the epoch the learning should start in (can be non 0 when loading a model)
+	@param max_epochs: int, the number of epochs to train (substracted by start_epoch)
+	@param plot_interval: int, interval for plotting the UMAP
+	@param test_interval: int, interval for creating a test on the current network state
+	@param checkpoint_interval: int, interval for creating a .pth checkpoint and writing logs
+	@param delete_checkpoints: bool, if true, deletes old checkpoints, thus only keeping the most up to date one.
+	"""
 	global epoch
 	for epoch in range(start_epoch, int(max_epochs) + 1):
 		sys.stdout.flush()
@@ -352,18 +410,25 @@ def learn(start_epoch, max_epochs, plot_interval, test_interval, checkpoint_inte
 	playSound()
 
 def evaluate():
+	"""
+	Evaluates the current state of the inner representation by random sampling and sampling another time close by (noise) to allow for
+	a check of visual consistency.
+	"""
 	model.eval()
 	stddev = 1  # And mean=0
 	for batch_idx, (data, _) in enumerate(syn_test_loader):
 		data = data.cuda()
 		if batch_idx == 0:
 			noise = torch.autograd.Variable(torch.randn(batch_size, bottleneck).cuda() * stddev)
-			eval_util("orig_nat", data, noise)
-			eval_util("natural", data, noise)
-			eval_util("orig_syn", data, noise)
-			eval_util("synth", data, noise)
+			sample_representation("orig_nat", data, noise)
+			sample_representation("natural", data, noise)
+			sample_representation("orig_syn", data, noise)
+			sample_representation("synth", data, noise)
 
 def represent():
+	"""
+	Allows to store the current representation of the inner network to either a .pt and .log file or immediately as a plotly figure in form of a UMAP.
+	"""
 	model.eval()
 	with torch.no_grad():
 
@@ -404,13 +469,15 @@ len_test_nat = None
 len_test_syn = None
 
 def showcase():
-	print("starting showcase")
+	"""
+	Creates overview plots from logfiles to visualize network performance. Not required for the learning workflow.
+	"""
 	from PIL import Image
 	from PIL import ImageFont
 	from PIL import ImageDraw
 
 	# Optional: Varied loading process for showcases, when not done at the end of training
-	# directory = "results/pc10/0.5hc"
+	# directory = "results/dirname"
 	# checkpoint_path = directory + "/50000.pth"
 	# checkpoint = torch.load(checkpoint_path)
 	# epoch = checkpoint['epoch']
@@ -440,6 +507,11 @@ def showcase():
 	actual_showcase(True, True)
 
 def actual_showcase(natural, isTest):
+	"""
+	Executes the actual opening of files and creation of plot image data for the showcase.
+	@param natural: bool, if true, the showcase should display natural data results, else synthetic
+	@param isTest: bool, if true, the showcase should display test data results, else training
+	"""
 	max_cells = 31
 	model.eval()
 	with torch.no_grad():
@@ -594,14 +666,22 @@ def actual_showcase(natural, isTest):
 		)
 		plotly.offline.plot(fig, filename=directory + "/showcase/" + prefix + "_" + midfix + "_proportion.html", auto_open=False) # Includes fig.show()
 
-		return correct, MAE, avg_dev
-
 def init_weights(m):
+	"""
+	Performans a xavier_normal initialization for the network weights and fills biases with a low start value.
+	@param m: the part of the model that should be initialized by this
+	"""
 	if type(m) == nn.Linear:
 		torch.nn.init.xavier_normal(m.weight)
 		m.bias.data.fill_(0.01)
 
 def main(lr, inter_dim, bneck, d_l_f, r_l_f, KLD_l_f, result_dir, checkpoint_path, max_epochs, regr_start,  plot_interval, test_interval, checkpoint_interval, delete_checkpoints, weight_decay, dropout_enc, dropout_fc, leak_enc, leak_dec, bs, s, syn_tr_name, syn_te_name, n):
+	"""
+	Main overall management function. Recieves parameters from the command-line interface, merges them with global variables if needed, creates required
+	directories, handles model loading, code backup etc.
+	@param lr: for this and other params description see cly.pi
+	@return: returns a score for the trained hyperparameter run. Only used in metalearning.py
+	"""
 	global learning_rate, bottleneck, decoder_l_factor, regressor_l_factor, KLD_l_factor, model, optimizer, directory, regressor_start, batch_size, seed, syn_train_name, syn_test_name, img_noise
 	learning_rate = lr
 	inter_dim = int(inter_dim)
@@ -684,4 +764,4 @@ def main(lr, inter_dim, bneck, d_l_f, r_l_f, KLD_l_f, result_dir, checkpoint_pat
 		f.close()
 
 	learn(start_epoch, max_epochs, plot_interval, test_interval, checkpoint_interval, delete_checkpoints)
-	return 1 # return 1e6 / distance_sum
+	return 1  # return 1e6 / distance_sum

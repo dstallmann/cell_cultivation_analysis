@@ -6,6 +6,9 @@ import learner
 import traceback
 
 def main():
+    """
+    Main method to be called by __main__. Contains CLI handling and passes the variables to learner.py
+    """
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--lr', help='learning rate', type=float, default=1e-4)

@@ -62,7 +62,7 @@ class CustomDatasetFromImages(Dataset):
 	def __len__(self):
 		return self.data_len
 
-prefix = <INSERT PROJECT PATH HERE>
+prefix = os.getcwd().replace("\\", "/")[:-4]  # gets the current path up to /vae and removes the /vae to get to the data directory
 
 num_workers = 0 # Use just 0 or 1 workers to prevent heavy memory overhead and slower loading
 pin_memory = True

@@ -12,6 +12,13 @@ store_plots = True
 np.random.seed(1)
 
 def createPlot(path, directory, title, warm_start):
+	"""
+	Creates plotly .html figure from the given log
+	@param path: string, contains the name of the log file to be plotted
+	@param directory: string, contains the working directory
+	@param title: string, the title of the plot created
+	@param warm_start: int, drops the first warm_start data points to allow useful visual presentation
+	"""
 	dataframe = pd.read_csv(directory + "/logs/" + path, header=None, index_col=False)
 	dataframe.columns = ['y']
 	dataframe.drop([0, warm_start])
@@ -22,6 +29,14 @@ def createPlot(path, directory, title, warm_start):
 		fig.show()
 
 def createPlotWithMean(path, directory, title, warm_start, mean):
+	"""
+	Mostly equals createPlot() in its use, but builds a mean of the given data points for visual presentation
+	@param path: string, contains the name of the log file to be plotted
+	@param directory: string, contains the working directory
+	@param title: string, the title of the plot created
+	@param warm_start: int, drops the first warm_start data points to allow useful visual presentation
+	@param mean: int, builds a mean point over this many data points
+	"""
 	dataframe = pd.read_csv(directory + "/logs/" + path, header=None, index_col=False)
 	dataframe.columns = ['y']
 	dataframe.drop([0, warm_start])
@@ -34,6 +49,12 @@ def createPlotWithMean(path, directory, title, warm_start, mean):
 		fig.show()
 
 def createPlots(warm_start, mean_size, directory):
+	"""
+	Main function to be called for singular plots. Calls plot creating functions.
+	@param warm_start: int, drops the first warm_start data points to allow useful visual presentation
+	@param mean_size: int, builds a mean point over this many data points
+	@param directory: string, contains the working directory
+	"""
 	#parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 	#parser.add_argument('--dir', help='directory', default="results/resultDefault", required=False)
 	#args = parser.parse_args()
@@ -51,6 +72,14 @@ def createPlots(warm_start, mean_size, directory):
 	createPlotWithMean("Correct_syn_log.txt", directory, "Correct synth", warm_start, mean_size)
 
 def comparisonPlot(logname, dirs, folder, warm_start, mean_size=0):
+	"""
+	Creates a comparative plot between multiple runs, to find optimizing hyperparameter sets.
+	@param logname: string, the name of the logfile to be compared
+	@param dirs: string list, contains the names of the folders containing the logfiles for each run
+	@param folder: string, name of the folder to contain the comparative results
+	@param warm_start: int, drops the first warm_start data points to allow useful visual presentation
+	@param mean_size: int, builds a mean point over this many data points
+	"""
 	fig = go.Figure()
 	xstring = "Epoch x100"
 	ystring = "Value"

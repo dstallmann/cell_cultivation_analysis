@@ -13,6 +13,10 @@ warnings.filterwarnings('ignore')
 dir = "results/bf" # Group folder, i.e. the folder that contains folders with runs
 
 def create_umap(name):
+	"""
+	Creates a UMAP from .log and .pt files within 'name'
+	@param name: string, name of the folder to work on (dir)
+	"""
 	global dir
 	direc = dir + "/" + name + "/"
 	os.chdir(direc + "representations/")
