@@ -1,0 +1,6 @@
+# Default ignored files
+/data
+/vae/results
+/logs
+/vae/__pycache__
+.idea
